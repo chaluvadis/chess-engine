@@ -21,7 +21,6 @@ def loadImages():
     pieces = ['wP', 'wR', 'wN', 'wB', 'wK',
               'wQ', 'bP', 'bR', 'bN', 'bB', 'bK', 'bQ']
     for piece in pieces:
-        print("images/"+piece+".png")
         IMAGES[piece] = p.transform.scale(
             p.image.load("images/"+piece+".png"), (SQ_SIZE, SQ_SIZE)
         )
@@ -60,14 +59,35 @@ def main():
     screen = p.display.set_mode((WIDTH, HEIGHT))
     clock = p.time.Clock()
     screen.fill(p.Color('white'))
-    game_state = ChessEngine.GameState()
+    gs = ChessEngine.GameState()
     loadImages()
     running = True
+    sqSelected = ()  # no square selected, keep track of last click of the user tuples: (row, col)
+    playerClicks = []  # keep track of player clicks, [(6,4), (4,4)]
     while running:
         for e in p.event.get():
             if e.type == p.QUIT:
                 running = False
-        drawGameState(screen, game_state)
+            elif e.type == p.MOUSEBUTTONDOWN:
+                location = p.mouse.get_pos()  # (x,y) position of mouse
+                col = location[0]//SQ_SIZE
+                row = location[1]//SQ_SIZE
+                if sqSelected == (row, col):
+                    sqSelected = ()  # deselect
+                    playerClicks = []  # clear the clicks
+                else:
+                    sqSelected = (row, col)
+                    playerClicks.append(sqSelected)
+
+                if len(playerClicks) == 2:  # after second click move the pawn
+                    move = ChessEngine.Move(
+                        playerClicks[0], playerClicks[1], gs.board)
+                    print(move.getChessNotation())
+                    gs.makeMove(move=move)
+                    sqSelected = ()
+                    playerClicks = []
+
+        drawGameState(screen, gs)
         clock.tick(MAX_FPS)
         p.display.flip()
 
